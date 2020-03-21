@@ -49,8 +49,9 @@
   },
 
   "athena_decoder":{
-      "graph":"build_graph/hkust/LG.fst",
-      "osymbols":"build_graph/hkust/words.txt",
+      "decoder_type":"wfst_decoder",
+      "graph":"examples/asr/hkust/build_graph/hkust/LG.fst",
+      "osymbols":"examples/asr/hkust/build_graph/hkust/words.txt",
       "vocab":"examples/asr/hkust/data/vocab",
       "acoustic_scale":10.0,
       "max_active":80,

@@ -26,7 +26,7 @@ from .utils.hparam import register_and_parse_hparams
 from .utils.metric_check import MetricChecker
 from .utils.misc import validate_seqs
 from .metrics import CharactorAccuracy
-from pydecoders import WFSTDecoder
+from pydecoders import WFSTDecoder, BeamSearchDecoder
 
 class BaseSolver(tf.keras.Model):
     """Base Solver.
@@ -196,6 +196,7 @@ class DecoderSolver(BaseSolver):
         "lm_weight": 0.1,
         "lm_type": "",
         "lm_path": None,
+        "decoder_type": None,
         "graph": None,
         "osymbols": None,
         "vocab": None,
@@ -240,32 +241,43 @@ class DecoderSolver(BaseSolver):
 
     def decode_use_athena_decoder(self, dataset):
         """ decode use athena decoder"""
-        vocab = {}
-        with open(self.hparams.vocab,'r') as f:
-            for line in f:
-                char = line.strip().split()[0]
-                idx = line.strip().split()[1]
-                vocab[char] = int(idx)
-        words = []
-        with open(self.hparams.osymbols,'r') as f:
-            for line in f:
-                word = line.strip().split()[0]
-                words.append(word)
-        decoder = WFSTDecoder(self.hparams.graph, acoustic_scale=self.hparams.acoustic_scale,
-                max_active=self.hparams.max_active, min_active=self.hparams.min_active,
-                beam=self.hparams.beam, max_seq_len=self.hparams.max_seq_len)
-        logging.info("load WFST graph successfully")
+        SUPPORTED_DECODERS = {
+                "wfst_decoder": WFSTDecoder,
+                "beam_search_decoder": BeamSearchDecoder
+        }
+
+        if self.hparams.decoder_type == 'wfst_decoder':
+            vocab = {}
+            with open(self.hparams.vocab,'r') as f:
+                for line in f:
+                    char = line.strip().split()[0]
+                    idx = line.strip().split()[1]
+                    vocab[char] = int(idx)
+            words = []
+            with open(self.hparams.osymbols,'r') as f:
+                for line in f:
+                    word = line.strip().split()[0]
+                    words.append(word)
+            decoder = WFSTDecoder(self.hparams.graph, acoustic_scale=self.hparams.acoustic_scale,
+                    max_active=self.hparams.max_active, min_active=self.hparams.min_active,
+                    beam=self.hparams.beam, max_seq_len=self.hparams.max_seq_len)
+            logging.info("load WFST graph successfully")
+        elif self.hparams.decoder_type == 'beam_search_decoder':
+            decoder = BeamSearchDecoder(max_active=self.hparams.max_active)
+
         metric = CharactorAccuracy()
         for index, samples in enumerate(dataset):
-            if index!= 4401: continue
             begin = time.time()
             samples = self.model.prepare_samples(samples)
             enc_outputs = self.model.model.get_encoder_outputs(samples)
             initial_packed_states = self.model.model.get_initial_packed_states()
             decoder.decode(enc_outputs, initial_packed_states, self.model.model.inference_one_step)
-            trans = decoder.get_best_path()
-            trans = ''.join([words[int(idx)] for idx in trans])
-            predictions = [vocab[tran] for tran in trans]
+            predictions = decoder.get_best_path()
+            if self.hparams.decoder_type == 'wfst_decoder':
+                predictions = ''.join([words[int(idx)] for idx in predictions])
+                predictions = [vocab[prediction] for prediction in predictions]
+            elif self.hparams.decoder_type == 'beam_search_decoder':
+                pass
             trans = tf.constant([predictions])
             trans = tf.sparse.from_dense(trans)
             trans = tf.cast(trans, tf.int64)
