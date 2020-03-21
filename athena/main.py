@@ -64,6 +64,7 @@ DEFAULT_CONFIGS = {
     "devset_config": None,
     "testset_config": None,
     "decode_config": None,
+    "athena_decoder": None,
 }
 
 def parse_config(config):
