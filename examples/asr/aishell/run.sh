@@ -24,20 +24,20 @@ source tools/env.sh
 
 stage=0
 stop_stage=100
-horovod_cmd="horovodrun -np 4 -H localhost:4"
+horovod_cmd="horovodrun -np 1 -H localhost:4"  # 这个需要验证一下参数含义
 horovod_prefix="horovod_"
-dataset_dir=/nfs/cold_project/datasets/opensource_data/aishell/data_aishell
+dataset_dir=/home/zhangpeng/mydisk/AISHELL-1/data_aishell  # aishell 目录
 
 if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
-    # prepare data
-    echo "Creating csv"
+    # prepare data，和kaldi一样进行数据准备
+    echo "Creating csv"  # 也是没想到是用pandas来存特征
     mkdir -p examples/asr/aishell/data
     python examples/asr/aishell/local/prepare_data.py \
         $dataset_dir examples/asr/aishell/data || exit 1
 fi
 
 if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
-    # calculate cmvn
+    # calculate cmvn 
     echo "Computing cmvn"
     cat examples/asr/aishell/data/train.csv > examples/asr/aishell/data/all.csv
     tail -n +2 examples/asr/aishell/data/dev.csv >> examples/asr/aishell/data/all.csv
@@ -46,12 +46,12 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
         examples/asr/aishell/configs/mpc.json examples/asr/aishell/data/all.csv || exit 1
 fi
 
-if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
-    # pretrain stage
-    echo "Pretraining"
-    $horovod_cmd python athena/${horovod_prefix}main.py \
-        examples/asr/aishell/configs/mpc.json || exit 1
-fi
+# if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
+#     # pretrain stage
+#     echo "Pretraining"
+#     $horovod_cmd python athena/${horovod_prefix}main.py \
+#         examples/asr/aishell/configs/mpc.json || exit 1
+# fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     # finetuning stage
@@ -61,11 +61,11 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
 fi
 
 if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
-    # prepare language model
+    # prepare language model，训练语言模型有两种
     echo "Training language model ..."
     tail -n +2 examples/asr/aishell/data/train.csv |\
         cut -f 3 > examples/asr/aishell/data/text
-    # tools/kenlm/build/bin/lmplz -o 4 < examples/asr/aishell/data/text \
+    # tools/kenlm/build/bin/lmplz -o 4 < examples/asr/aishell/data/text \   # 1. n-gram
     #     > examples/asr/aisehll/data/4gram.arpa || exit 1
     tail -n +2 examples/asr/aishell/data/train.csv |\
         awk '{print $3"\t"$3}' > examples/asr/aishell/data/train.trans.csv
@@ -73,7 +73,7 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
         awk '{print $3"\t"$3}' > examples/asr/aishell/data/dev.trans.csv
     tail -n +2 examples/asr/aishell/data/test.csv |\
         awk '{print $3"\t"$3}' > examples/asr/aishell/data/test.trans.csv
-    $horovod_cmd python athena/${horovod_prefix}main.py \
+    $horovod_cmd python athena/${horovod_prefix}main.py \  # rnnlm
         examples/asr/aishell/configs/rnnlm.json || exit 1
 fi
 

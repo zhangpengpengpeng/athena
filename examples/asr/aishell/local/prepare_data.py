@@ -89,7 +89,7 @@ def convert_audio_and_split_transcript(dataset_dir, subset, out_csv_file, output
 
 def processor(dataset_dir, subset, force_process, output_dir):
     """ download and process """
-    if subset not in SUBSETS:
+    if subset not in SUBSETS:   
         raise ValueError(subset, "is not in AISHELL")
     if force_process:
         logging.info("force process is set to be true")
@@ -112,5 +112,5 @@ if __name__ == "__main__":
         exit(1)
     DATASET_DIR = sys.argv[1]
     OUTPUT_DIR = sys.argv[2]
-    for SUBSET in SUBSETS:
+    for SUBSET in SUBSETS:  # 3个数据集
         processor(DATASET_DIR, SUBSET, True, OUTPUT_DIR)

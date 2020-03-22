@@ -1,0 +1,13 @@
+Creating csv
+Traceback (most recent call last):
+  File "examples/asr/aishell/local/prepare_data.py", line 25, in <module>
+    from athena import get_wave_file_length
+  File "/home/zhangpeng/mydisk/athena/athena/__init__.py", line 52, in <module>
+    from .solver import BaseSolver
+  File "/home/zhangpeng/mydisk/athena/athena/solver.py", line 24, in <module>
+    import horovod.tensorflow as hvd
+  File "/home/zhangpeng/anaconda3/envs/py36/lib/python3.6/site-packages/horovod/tensorflow/__init__.py", line 25, in <module>
+    check_extension('horovod.tensorflow', 'HOROVOD_WITH_TENSORFLOW', __file__, 'mpi_lib')
+  File "/home/zhangpeng/anaconda3/envs/py36/lib/python3.6/site-packages/horovod/common/util.py", line 51, in check_extension
+    'Horovod with %s=1 to debug the build error.' % (ext_name, ext_env_var))
+ImportError: Extension horovod.tensorflow has not been built.  If this is not expected, reinstall Horovod with HOROVOD_WITH_TENSORFLOW=1 to debug the build error.

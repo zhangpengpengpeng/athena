@@ -1,0 +1,1 @@
+You should run this script in athena directory!!
